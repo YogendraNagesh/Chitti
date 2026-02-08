@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chitti Register Form </title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+       background: linear-gradient(135deg, rgba(9, 10, 11, 0.8), rgba(13, 19, 19, 0.8)),
+        url(images/money\ 150p-01.jpg); 
+        
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      padding: 20px;
+    }
+
+    .container {
+      background: transparent;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #e5e903;
+    }
+
+    h4 {
+      color: white;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    button {
+      background: #007bff;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    .msg {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    option:disabled {
+      color: gray;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>CHITTI REGISTRATION</h2><h4>(Slot Booking) </h4>
+    
+    <form id="registerForm">
+      <input type="text" id="name" placeholder="Enter your name" required />
+      <input type="tel" id="mobile" placeholder="Enter mobile number" maxlength="10" required />
+      <select id="month" required>
+        <option value="">Select Month</option>
+        <option value="March">March</option>
+        <option value="April">April</option>
+        <option value="May">May</option>
+        <option value="June">June</option>
+        <option value="July">July</option>
+        <option value="August">August</option>
+        <option value="September">September</option>
+        <option value="Octuber">October</option>
+        <option value="November">November</option>
+        <option value="December">December</option>
+
+      </select>
+      <button type="submit">Submit</button>
+      <div class="msg" id="message"></div>
+    </form>
+  </div>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwjhp2Jj1vO3uZKiQc8wCoeeBBhbRPIYdssn08g4ZexiGZcckLy_ZJzH0O5mycmRly4Ng/exec";
+
+    const form = document.getElementById("registerForm");
+    const message = document.getElementById("message");
+    const monthSelect = document.getElementById("month");
+
+    // 1️⃣ Load used months from Google Sheet
+    async function loadUsedMonths() {
+
+      try {
+        const res = await fetch(scriptURL);
+        const data = await res.json();
+        const used = data.usedMonths || [];
+
+        [...monthSelect.options].forEach(opt => {
+          if (used.includes(opt.value)) {
+            opt.disabled = true;
+          }
+        });
+      } catch (err) {
+        console.error("Error fetching months:", err);
+      }
+    }
+
+    // 2️⃣ Submit form
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value.trim();
+      const mobile = document.getElementById("mobile").value.trim();
+      const month = monthSelect.value;
+
+      if (name === "" || mobile === "" || month === "") {
+        message.style.color = "red";
+        message.textContent = "⚠️ Please fill all fields.";
+        return;
+      }
+
+      if (!/^[0-9]{10}$/.test(mobile)) {
+        message.style.color = "red";
+        message.textContent = "⚠️ Invalid mobile number.";
+        return;
+      }
+
+      message.style.color = "black";
+      message.textContent = "⏳ Saving...";
+
+      try {
+        const res = await fetch(scriptURL, {
+          method: "POST",
+          body: JSON.stringify({ name, mobile, month }),
+        });
+        const result = await res.json();
+
+        if (result.result === "month-taken") {
+          message.style.color = "red";
+          message.textContent = "⚠️ This month is already taken!";
+        } else if (result.result === "success") {
+          message.style.color = "green";
+          message.textContent = "✅ Registered successfully!";
+          monthSelect.querySelector(`option[value='${month}']`).disabled = true;
+          form.reset();
+        } else {
+          throw new Error("Unexpected response");
+        }
+      } catch (err) {
+        console.error(err);
+        message.style.color = "red";
+        message.textContent = "❌ Error saving data!";
+      }
+    });
+
+    // Load existing data when page loads
+    loadUsedMonths();
+  </script>
+</body>
+</html>
